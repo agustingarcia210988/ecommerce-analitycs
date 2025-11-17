@@ -36,6 +36,35 @@ def procesar_ordenes(datos):
     df = pd.DataFrame(lista_ordenes)
     return df
 
+def aplicar_transformaciones(df):
+    """Aplica transformaciones al DataFrame de órdenes"""
+    
+    # Convertir fecha a datetime
+    df['fecha'] = pd.to_datetime(df['fecha'])
+    
+    # Calcular porcentaje de descuento
+    df['porcentaje_descuento'] = (df['descuento'] / df['subtotal'] * 100).round(2)
+    
+    # Precio promedio por item
+    df['precio_promedio_item'] = (df['total'] / df['cantidad_items']).round(2)
+    
+    
+    # Rellenar direcciones vacías
+    df['direccion'] = df['direccion'].fillna('Sin dirección')
+    
+    return df
+
+def calcular_metricas(df):
+    """Calcula métricas agregadas del DataFrame"""
+    metricas = {
+        'total_vendido': df['total'].sum(),
+        'ticket_promedio': df['total'].mean(),
+        'total_items_vendidos': df['cantidad_items'].sum(),
+        'descuento_total': df['descuento'].sum(),
+        'cantidad_ordenes': len(df)
+    }
+    return metricas
+
 def main():
     # Fecha de prueba
     fecha = "2024-11-15"
@@ -48,15 +77,22 @@ def main():
     # Proceso los datos
     df_ordenes = procesar_ordenes(datos)
     
+    # Aplico transformaciones
+    df_ordenes = aplicar_transformaciones(df_ordenes)
+    
     # Filtro solo las órdenes finalizadas
     df_finalizadas = df_ordenes[df_ordenes['estado'] == 'delivered']
     
     print(f"\nÓrdenes finalizadas: {len(df_finalizadas)}")
-    print("\nPrimeras órdenes finalizadas:")
-    print(df_finalizadas.head())
     
-    # Guardo en parquet
-    nombre_archivo = f"ordenes_{fecha}.parquet"
+    # Calculo métricas
+    metricas = calcular_metricas(df_finalizadas)
+    print("\nMétricas:")
+    for key, value in metricas.items():
+        print(f"  {key}: {value}")
+    
+    # Guardo en parquet dentro de carpeta data
+    nombre_archivo = f"data/ordenes_{fecha}.parquet"
     df_finalizadas.to_parquet(nombre_archivo, index=False)
     print(f"\nDatos guardados en {nombre_archivo}")
 
