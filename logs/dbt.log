@@ -1,0 +1,31 @@
+[0m15:04:54.650083 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe438f290>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe40051c0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe43d4440>]}
+
+
+============================== 15:04:54.845723 | f5133acb-254c-47c5-b067-dba02bcb8d54 ==============================
+[0m15:04:54.845723 [info ] [MainThread]: Running with dbt=1.10.15
+[0m15:04:54.850268 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'cache_selected_only': 'False', 'warn_error': 'None', 'log_path': 'logs', 'write_json': 'True', 'version_check': 'True', 'empty': 'None', 'send_anonymous_usage_stats': 'True', 'log_cache_events': 'False', 'profiles_dir': '/root/.dbt', 'debug': 'False', 'partial_parse': 'True', 'indirect_selection': 'eager', 'no_print': 'None', 'target_path': 'None', 'log_format': 'default', 'use_experimental_parser': 'False', 'fail_fast': 'False', 'invocation_command': 'dbt init ordenes_analytics', 'static_parser': 'True', 'use_colors': 'True', 'quiet': 'False', 'introspect': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])'}
+[0m15:04:56.431283 [info ] [MainThread]: Creating dbt configuration folder at /root/.dbt
+[0m15:04:56.675363 [debug] [MainThread]: Starter project path: /mnt/c/Users/ag250087/Documents/ecommerce-analitycs/.venv/lib/python3.12/site-packages/dbt/include/starter_project
+[0m15:04:57.931278 [info ] [MainThread]: 
+Your new dbt project "ordenes_analytics" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+
+[0m15:04:57.934485 [info ] [MainThread]: Setting up your profile.
+[0m15:06:06.379057 [info ] [MainThread]: Profile ordenes_analytics written to /root/.dbt/profiles.yml using target's sample configuration. Once updated, you'll be able to start developing with dbt.
+[0m15:06:06.391460 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 73.41768, "process_in_blocks": "71368", "process_kernel_time": 4.67349, "process_mem_max_rss": "164808", "process_out_blocks": "8", "process_user_time": 8.945863}
+[0m15:06:06.395429 [debug] [MainThread]: Command `dbt init` succeeded at 15:06:06.395093 after 73.42 seconds
+[0m15:06:06.398562 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe65cd4c0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe38ef4a0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7febe3c86f00>]}
+[0m15:06:06.402037 [debug] [MainThread]: Flushing usage events
+[0m15:06:07.666526 [debug] [MainThread]: An error was encountered while trying to flush usage events
