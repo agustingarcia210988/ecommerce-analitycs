@@ -1,0 +1,31 @@
+name: Tests Unitarios
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+    
+    - name: Instalar uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Instalar dependencias
+      run: |
+        uv sync
+    
+    - name: Ejecutar tests
+      run: |
+        uv run pytest tests/ -v --tb=short

@@ -1,0 +1,7 @@
+ordenes_analytics:
+  outputs:
+    dev:
+      type: duckdb
+      path: ordenes.duckdb
+      threads: 4
+  target: dev
