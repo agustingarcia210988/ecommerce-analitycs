@@ -5,6 +5,7 @@ WITH ordenes_staging AS (
 )
 
 SELECT
+    fecha,
     COUNT(*) as cantidad_ordenes,
     SUM(total) as total_vendido,
     ROUND(AVG(total), 2) as ticket_promedio,

@@ -1,22 +1,31 @@
-import requests
+# extraer_ordenes.py
 import pandas as pd
-from datetime import datetime
+import requests
+import os
+from typing import Dict, List
+from dotenv import load_dotenv
 
-# URL de la API
-URL_BASE = "http://localhost:8000"
+# Cargar variables de entorno
+load_dotenv()
 
-def obtener_ordenes(fecha):
-    """Trae las órdenes de una fecha"""
-    url = f"{URL_BASE}/orders?fecha={fecha}"
-    respuesta = requests.get(url)
-    return respuesta.json()
+# Obtener URL de la API desde environment
+API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:8000')
 
-def procesar_ordenes(datos):
-    """Convierte los datos a un DataFrame de pandas"""
-    ordenes = datos['orders']
+def extraer_desde_api(fecha: str, url_base: str = None) -> pd.DataFrame:
+    """Extrae órdenes de la API para una fecha específica"""
+    # Si no se pasa url_base, usar la del environment
+    if url_base is None:
+        url_base = API_BASE_URL
     
-    # Armo una lista con los datos que me interesan
+    url = f"{url_base}/orders?fecha={fecha}"
+    
+    respuesta = requests.get(url, timeout=30)
+    respuesta.raise_for_status()
+    datos = respuesta.json()
+    
+    ordenes = datos['orders']
     lista_ordenes = []
+    
     for orden in ordenes:
         lista_ordenes.append({
             'id_orden': orden['order_id'],
@@ -33,11 +42,11 @@ def procesar_ordenes(datos):
             'cantidad_items': orden['items_count']
         })
     
-    df = pd.DataFrame(lista_ordenes)
-    return df
+    return pd.DataFrame(lista_ordenes)
 
-def aplicar_transformaciones(df):
-    """Aplica transformaciones al DataFrame de órdenes"""
+def aplicar_transformaciones(df: pd.DataFrame) -> pd.DataFrame:
+    """Aplica transformaciones al DataFrame"""
+    df = df.copy()
     
     # Convertir fecha a datetime
     df['fecha'] = pd.to_datetime(df['fecha'])
@@ -48,53 +57,51 @@ def aplicar_transformaciones(df):
     # Precio promedio por item
     df['precio_promedio_item'] = (df['total'] / df['cantidad_items']).round(2)
     
-    
     # Rellenar direcciones vacías
     df['direccion'] = df['direccion'].fillna('Sin dirección')
     
     return df
 
-def calcular_metricas(df):
-    """Calcula métricas agregadas del DataFrame"""
-    metricas = {
+def filtrar_ordenes_entregadas(df: pd.DataFrame) -> pd.DataFrame:
+    """Filtra solo las órdenes con status 'delivered'"""
+    return df[df['estado'] == 'delivered'].copy()
+
+def calcular_metricas(df: pd.DataFrame) -> Dict:
+    """Calcula métricas agregadas de las órdenes"""
+    return {
         'total_vendido': df['total'].sum(),
         'ticket_promedio': df['total'].mean(),
         'total_items_vendidos': df['cantidad_items'].sum(),
         'descuento_total': df['descuento'].sum(),
         'cantidad_ordenes': len(df)
     }
-    return metricas
 
-def main():
-    # Fecha de prueba
-    fecha = "2024-11-15"
-    
-    print(f"Obteniendo órdenes del {fecha}...")
-    datos = obtener_ordenes(fecha)
-    
-    print(f"Total de órdenes: {datos['total_count']}")
-    
-    # Proceso los datos
-    df_ordenes = procesar_ordenes(datos)
-    
-    # Aplico transformaciones
-    df_ordenes = aplicar_transformaciones(df_ordenes)
-    
-    # Filtro solo las órdenes finalizadas
-    df_finalizadas = df_ordenes[df_ordenes['estado'] == 'delivered']
-    
-    print(f"\nÓrdenes finalizadas: {len(df_finalizadas)}")
-    
-    # Calculo métricas
-    metricas = calcular_metricas(df_finalizadas)
-    print("\nMétricas:")
-    for key, value in metricas.items():
-        print(f"  {key}: {value}")
-    
-    # Guardo en parquet dentro de carpeta data
-    nombre_archivo = f"data/ordenes_{fecha}.parquet"
-    df_finalizadas.to_parquet(nombre_archivo, index=False)
-    print(f"\nDatos guardados en {nombre_archivo}")
+def procesar_ordenes(fecha: str, url_base: str = None) -> pd.DataFrame:
+    """Pipeline completo: extrae, transforma y filtra"""
+    df = extraer_desde_api(fecha, url_base)
+    df = aplicar_transformaciones(df)
+    df = filtrar_ordenes_entregadas(df)
+    return df
 
+# Script standalone (si lo ejecutás directamente)
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fecha', default='2024-11-15')
+    parser.add_argument('--url', default=None, help='URL base de la API')
+    args = parser.parse_args()
+    
+    print(f"🌐 API URL: {args.url or API_BASE_URL}")
+    
+    df_resultado = procesar_ordenes(args.fecha, args.url)
+    
+    print(f"✅ Órdenes procesadas: {len(df_resultado)}")
+    print("\nMétricas:")
+    for k, v in calcular_metricas(df_resultado).items():
+        print(f"  {k}: {v}")
+    
+    # Guardar
+    archivo = f"data/ordenes_{args.fecha}.parquet"
+    df_resultado.to_parquet(archivo, index=False)
+    print(f"\n💾 Guardado en: {archivo}")
