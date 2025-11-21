@@ -1,7 +1,9 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.models import Variable
 from datetime import datetime, timedelta
 import sys
+import os
 import subprocess
 
 sys.path.insert(0, '/opt/airflow/project')
@@ -9,15 +11,25 @@ sys.path.insert(0, '/opt/airflow/project')
 
 def extraer_ordenes_fecha(**context):
     """Task de Airflow que extrae ordenes y items"""
-    from extraer_ordenes import procesar_ordenes
+    from extraer_ordenes import procesar_ordenes, extraer_desde_api, aplicar_transformaciones
     
     fecha_ejecucion = context['ds']
-    api_url = 'http://host.docker.internal:8000'
+    
+    # Airflow Variables
+    api_url = os.getenv("API_BASE_URL", "http://host.docker.internal:8000")
+    limite_ordenes = int(Variable.get("limite_ordenes", default_var=20))
+    solo_entregadas = Variable.get("solo_entregadas", default_var="true").lower() == "true"
     
     print(f"Extrayendo ordenes para: {fecha_ejecucion}")
     print(f"API URL: {api_url}")
+    print(f"Limite ordenes: {limite_ordenes}")
+    print(f"Solo entregadas: {solo_entregadas}")
     
-    df_ordenes, df_items = procesar_ordenes(fecha_ejecucion, api_url)
+    if solo_entregadas:
+        df_ordenes, df_items = procesar_ordenes(fecha_ejecucion, api_url)
+    else:
+        df_ordenes, df_items = extraer_desde_api(fecha_ejecucion, api_url)
+        df_ordenes = aplicar_transformaciones(df_ordenes)
     
     print(f"Ordenes extraidas: {len(df_ordenes)}")
     print(f"Items extraidos: {len(df_items)}")
@@ -38,12 +50,15 @@ def ejecutar_dbt(**context):
     """Ejecuta los modelos de dbt (Bronze, Silver, Gold)"""
     
     fecha_ejecucion = context['ds']
+    dbt_target = Variable.get("dbt_target", default_var="dev")
+    
     print(f"Ejecutando transformaciones dbt para fecha: {fecha_ejecucion}")
+    print(f"dbt target: {dbt_target}")
     
     dbt_dir = "/opt/airflow/project/ordenes_analytics"
     
     resultado = subprocess.run(
-        ["dbt", "run", "--profiles-dir", dbt_dir],
+        ["dbt", "run", "--profiles-dir", dbt_dir, "--target", dbt_target],
         cwd=dbt_dir,
         capture_output=True,
         text=True
@@ -62,6 +77,12 @@ def ejecutar_dbt(**context):
 
 def ejecutar_dbt_tests(**context):
     """Ejecuta los tests de dbt"""
+    
+    ejecutar_tests = Variable.get("ejecutar_dbt_tests", default_var="true").lower() == "true"
+    
+    if not ejecutar_tests:
+        print("Tests de dbt desactivados por variable")
+        return
     
     print("Ejecutando tests de dbt...")
     
@@ -97,7 +118,7 @@ with DAG(
     default_args=default_args,
     description='ETL diario de ordenes con arquitectura Medallion (Bronze/Silver/Gold)',
     schedule_interval='0 2 * * *',
-    start_date=datetime(2025, 11, 1),
+    start_date=datetime(2025, 10, 1),
     catchup=True,
     max_active_runs=1,
     tags=['ordenes', 'etl', 'dbt', 'medallion'],

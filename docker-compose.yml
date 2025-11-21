@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
@@ -20,22 +18,23 @@ services:
       - postgres
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres/${POSTGRES_DB:-airflow}
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FOLDER_PERMISSIONS: '777'
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FILE_PERMISSIONS: '666'
       _AIRFLOW_DB_MIGRATE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: airflow
-      _AIRFLOW_WWW_USER_PASSWORD: airflow
-      # ✅ Variable de entorno para la API
-      API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:8000}
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD:-airflow}
+      API_BASE_URL: ${API_BASE_URL}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs
       - ./data:/opt/airflow/data
       - .:/opt/airflow/project
-    command: bash -c "airflow db migrate && airflow users create --username airflow --password airflow --firstname Admin --lastname User --role Admin --email admin@example.com || true"
+    command: bash -c "airflow db migrate && airflow users create --username ${AIRFLOW_USER:-airflow} --password ${AIRFLOW_PASSWORD:-airflow} --firstname Admin --lastname User --role Admin --email admin@example.com || true"
 
   airflow-webserver:
     build: .
@@ -44,17 +43,18 @@ services:
       - airflow-init
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres/${POSTGRES_DB:-airflow}
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      # ✅ Variable de entorno para la API
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FOLDER_PERMISSIONS: '777'
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FILE_PERMISSIONS: '666'
       API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:8000}
     ports:
       - "8080:8080"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs
       - ./data:/opt/airflow/data
       - .:/opt/airflow/project
     command: webserver
@@ -66,15 +66,16 @@ services:
       - airflow-init
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres/${POSTGRES_DB:-airflow}
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      # ✅ Variable de entorno para la API
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FOLDER_PERMISSIONS: '777'
+      AIRFLOW__LOGGING__FILE_TASK_HANDLER_NEW_FILE_PERMISSIONS: '666'
       API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:8000}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs
       - ./data:/opt/airflow/data
       - .:/opt/airflow/project
     command: scheduler

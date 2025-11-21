@@ -1,6 +1,6 @@
 # Pipeline ETL de Ordenes - Arquitectura Medallion
 
-Pipeline ETL que extrae datos de ordenes desde una API, los transforma usando una arquitectura Medallion (Bronze/Silver/Gold) con dbt, y los almacena en DuckDB. Orquestado con Apache Airflow en Docker.
+Pipeline ETL que extrae datos de ordenes desde la API http://ecommerce-haze-8597.fly.dev, los transforma usando una arquitectura Medallion (Bronze/Silver/Gold) con dbt, y los almacena en DuckDB. Orquestado con Apache Airflow en Docker.
 
 ## Arquitectura del Pipeline
 ```
@@ -107,11 +107,11 @@ ecommerce-analytics/
 │   └── test_extraer.py            # Tests unitarios
 ├── data/                          # Archivos parquet generados
 ├── extraer_ordenes.py             # Script de extraccion
-├── docker-compose.yml             # Configuracion de Airflow
-├── Dockerfile                     # Imagen custom
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile                       # Comandos simplificados
 ├── requirements.txt
 ├── pyproject.toml
-├── .gitignore
 ├── .env.example
 └── README.md
 ```
@@ -122,6 +122,16 @@ ecommerce-analytics/
 - Python 3.11+
 - uv (gestor de paquetes)
 - Git
+- make (para comandos simplificados)
+
+### Instalacion de requisitos en Ubuntu/WSL
+```bash
+# Instalar make
+sudo apt install make
+
+# Instalar uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 ## Despliegue del Proyecto
 
@@ -136,51 +146,105 @@ cd ecommerce-analytics
 cp .env.example .env
 ```
 
-### 3. Instalar dependencias Python
-```bash
-# Instalar uv si no lo tenes
-curl -LsSf https://astral.sh/uv/install.sh | sh
+Editar `.env` con tu configuracion:
+```env
+# API
+API_BASE_URL=http://ecommerce-haze-8597.fly.dev
 
-# Instalar dependencias
-uv sync
+# Postgres
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+
+# Airflow
+AIRFLOW_USER=
+AIRFLOW_PASSWORD=
 ```
 
-### 4. Crear carpetas necesarias
+### 3. Crear carpetas necesarias
 ```bash
-mkdir -p data logs airflow/logs
+mkdir -p data logs
 ```
 
-### 5. Levantar Airflow con Docker
+### 4. Levantar Airflow con Docker
 ```bash
-# Build de la imagen
+make build
+make up
+```
+
+O sin Makefile:
+```bash
 docker-compose build
-
-# Iniciar servicios
 docker-compose up -d
+```
 
-# Verificar estado
+Verificar estado:
+```bash
 docker-compose ps
 ```
 
-### 6. Acceder a Airflow
+### 5. Acceder a Airflow
 
 - URL: http://localhost:8080
-- Usuario: `airflow`
-- Password: `airflow`
+- Usuario: valor de `AIRFLOW_USER` en `.env`
+- Password: valor de `AIRFLOW_PASSWORD` en `.env`
 
-### 7. Ejecutar el pipeline
+### 6. Ejecutar el pipeline
 
-1. En la UI de Airflow, activar el DAG `etl_ordenes_diario`
-2. Click en "Trigger DAG"
-
-O desde terminal:
+**Ejecutar para una fecha especifica:**
 ```bash
-docker-compose exec airflow-scheduler airflow dags backfill \
-    etl_ordenes_diario \
-    --start-date 2025-11-10 \
-    --end-date 2025-11-20 \
-    --reset-dagruns
+make test
 ```
+
+Para otra fecha:
+```bash
+docker-compose exec airflow-scheduler airflow dags test etl_ordenes_diario 2025-11-20
+```
+
+**Ejecutar para un rango de fechas (backfill):**
+```bash
+make backfill
+```
+
+**Ejecutar desde la UI de Airflow:**
+
+1. Acceder a http://localhost:8080
+2. Activar el DAG `etl_ordenes_diario`
+3. Click en "Trigger DAG"
+
+## Comandos disponibles (Makefile)
+
+| Comando | Descripcion |
+|---------|-------------|
+| `make build` | Construye la imagen de Docker |
+| `make up` | Inicia los contenedores |
+| `make down` | Detiene los contenedores |
+| `make restart` | Reinicia todo |
+| `make logs` | Ver logs del scheduler |
+| `make test` | Ejecuta el DAG para una fecha |
+| `make backfill` | Ejecuta el DAG para un rango de fechas |
+| `make clean` | Limpia logs y base de datos |
+| `make pytest` | Ejecuta tests unitarios |
+
+## Configuracion de Airflow Variables
+
+El pipeline utiliza Airflow Variables para modificar su comportamiento sin cambiar codigo.
+
+### Como configurar
+
+1. Acceder a Airflow UI: http://localhost:8080
+2. Ir a **Admin > Variables**
+3. Click en **+** para agregar cada variable
+
+### Variables disponibles
+
+| Key | Valor default | Descripcion |
+|-----|---------------|-------------|
+| `api_url` | Valor de `API_BASE_URL` en `.env` | URL de la API de ordenes |
+| `limite_ordenes` | `20` | Cantidad de ordenes a extraer por ejecucion |
+| `solo_entregadas` | `true` | Si es `true`, filtra solo ordenes con status delivered |
+| `dbt_target` | `dev` | Target de dbt a utilizar (dev/local) |
+| `ejecutar_dbt_tests` | `true` | Si es `false`, omite la ejecucion de tests de dbt |
 
 ## Flujo del Pipeline
 
@@ -210,15 +274,22 @@ docker-compose exec airflow-scheduler airflow dags backfill \
 
 ### Ejecutar tests unitarios
 ```bash
+make pytest
+```
+
+O directamente:
+```bash
 uv run pytest tests/ -v
 ```
 
-### Tests implementados
+Resultado esperado:
+```
+tests/test_extraer.py::test_aplicar_transformaciones PASSED
+tests/test_extraer.py::test_filtrar_ordenes_entregadas PASSED
+tests/test_extraer.py::test_calcular_metricas PASSED
+tests/test_extraer.py::test_calcular_metricas_dataframe_vacio PASSED
 
-- `test_aplicar_transformaciones`: Verifica transformaciones de datos
-- `test_filtrar_ordenes_entregadas`: Verifica filtrado por estado
-- `test_calcular_metricas`: Verifica calculo de metricas agregadas
-- `test_calcular_metricas_dataframe_vacio`: Verifica manejo de datos vacios
+```
 
 ### Tests de dbt
 ```bash
@@ -228,18 +299,18 @@ dbt test --profiles-dir .
 
 ## Consultar los Datos
 
+**Importante:** Abrir la base de datos en modo read-only para evitar bloqueos mientras el pipeline corre.
+
 ### Desde DuckDB CLI
 ```bash
-duckdb ordenes_analytics/ordenes.duckdb
-
+duckdb -readonly ordenes_analytics/ordenes.duckdb
+```
+```sql
 -- Ver tablas disponibles
 SHOW TABLES;
 
 -- Consultar ventas diarias
 SELECT * FROM gld_agg_ventas_diarias ORDER BY fecha;
-
--- Consultar ventas mensuales
-SELECT * FROM gld_agg_ventas_mensuales;
 
 -- Consultar fact de ventas
 SELECT * FROM gld_fact_ventas LIMIT 10;
@@ -251,51 +322,11 @@ SELECT * FROM gld_fact_ventas LIMIT 10;
 ```python
 import duckdb
 
-con = duckdb.connect('ordenes_analytics/ordenes.duckdb')
+con = duckdb.connect('ordenes_analytics/ordenes.duckdb', read_only=True)
 df = con.execute("SELECT * FROM gld_agg_ventas_diarias").df()
 print(df)
 con.close()
 ```
-
-## Comandos Utiles
-
-### Docker
-```bash
-# Ver logs
-docker-compose logs -f airflow-scheduler
-
-# Reiniciar servicios
-docker-compose restart
-
-# Parar todo
-docker-compose down
-
-# Rebuild completo
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### dbt
-```bash
-cd ordenes_analytics
-
-# Ejecutar todos los modelos
-dbt run --profiles-dir .
-
-# Ejecutar solo una capa
-dbt run --profiles-dir . --select bronze
-dbt run --profiles-dir . --select silver
-dbt run --profiles-dir . --select gold
-
-# Ejecutar tests
-dbt test --profiles-dir .
-
-# Generar documentacion
-dbt docs generate --profiles-dir .
-
-
-## Tecnologias Utilizadas
 
 - **Python 3.11**: Lenguaje principal
 - **pandas**: Transformacion de datos
@@ -307,6 +338,4 @@ dbt docs generate --profiles-dir .
 - **GitHub Actions**: CI/CD
 - **uv**: Gestor de dependencias
 
-## Autor
-
-Agustin Garcia
+Autor: Agustín García
