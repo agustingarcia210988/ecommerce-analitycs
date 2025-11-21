@@ -57,7 +57,7 @@ extraer_ordenes >> ejecutar_dbt
 ⚠️ **Importante**: Para que Docker acceda a la API en localhost:
 
 ```python
-url = f"http://host.docker.internal:8000/orders?fecha={fecha_ejecucion}"
+url = f"http://ecommerce-haze-8597.fly.dev///orders?fecha={fecha_ejecucion}"
 ```
 
 `host.docker.internal` permite al contenedor acceder al localhost del host.
