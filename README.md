@@ -137,7 +137,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/TU-USUARIO/ecommerce-analytics.git
+git clone https://github.com/agustingarcia210988/ecommerce-analytics.git
 cd ecommerce-analytics
 ```
 
