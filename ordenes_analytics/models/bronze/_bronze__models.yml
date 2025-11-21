@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: brz_ordenes
+    description: "Datos crudos de ordenes extraidos de la API - Capa Bronze"
+    
+  - name: brz_items
+    description: "Datos crudos de items de ordenes extraidos de la API - Capa Bronze"

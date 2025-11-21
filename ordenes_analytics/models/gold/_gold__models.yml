@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: gld_dim_cliente
+    description: "Dimension de clientes - Capa Gold"
+    
+  - name: gld_dim_producto
+    description: "Dimension de productos - Capa Gold"
+    
+  - name: gld_dim_ubicacion
+    description: "Dimension de ubicaciones con regiones - Capa Gold"
+    
+  - name: gld_fact_ventas
+    description: "Tabla de hechos de ventas - Capa Gold"
+    
+  - name: gld_agg_ventas_diarias
+    description: "Agregacion de ventas por dia - Capa Gold"
+    
+  - name: gld_agg_ventas_mensuales
+    description: "Agregacion de ventas por mes - Capa Gold"

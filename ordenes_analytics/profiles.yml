@@ -2,6 +2,10 @@ ordenes_analytics:
   outputs:
     dev:
       type: duckdb
-      path: ordenes.duckdb
+      path: /opt/airflow/project/ordenes_analytics/ordenes.duckdb
+      threads: 4
+    local:
+      type: duckdb
+      path: ./ordenes.duckdb
       threads: 4
   target: dev

@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: slv_ordenes
+    description: "Ordenes normalizadas con surrogate keys - Capa Silver"
+    columns:
+      - name: sk_orden
+        tests:
+          - unique
+          - not_null
+
+  - name: slv_items
+    description: "Items de ordenes normalizados - Capa Silver"
+    columns:
+      - name: sk_item
+        tests:
+          - unique
+          - not_null
+
+  - name: slv_dim_fecha
+    description: "Dimension de fecha - Capa Silver"
+    columns:
+      - name: sk_fecha
+        tests:
+          - unique
+          - not_null
