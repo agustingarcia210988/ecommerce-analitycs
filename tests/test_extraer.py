@@ -29,7 +29,7 @@ def test_aplicar_transformaciones():
     
     assert df_resultado['porcentaje_descuento'].iloc[0] == 10.0
     assert df_resultado['porcentaje_descuento'].iloc[1] == 20.0
-    assert df_resultado['direccion_completa'].iloc[1] == 'Sin direccion'
+    assert df_resultado['direccion_completa'].iloc[1] == 'Sin dirección'
     assert pd.api.types.is_datetime64_any_dtype(df_resultado['fecha'])
     assert df_resultado['precio_promedio_item'].iloc[0] == 158.9
     assert df_resultado['precio_promedio_item'].iloc[1] == 146.8
